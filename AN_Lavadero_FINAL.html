@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AN Lavadero Automotor</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --p1:#7B2FBE;--p2:#5A1F8A;--p3:#9B4FDE;--p4:#C060F0;
+  --black:#0A0A0A;--dark:#161616;--card:#1C1C1C;--card2:#232323;
+  --border:rgba(140,50,200,0.28);--text:#F0F0F0;--muted:#888;
+  --pfaint:rgba(140,50,200,0.16);
+  --s-bg:rgba(29,158,117,0.16);--s-c:#5DCAA5;--s-b:rgba(29,158,117,0.26);
+  --w-bg:rgba(186,117,23,0.16);--w-c:#EF9F27;
+  --d-bg:rgba(226,75,74,0.16);--d-c:#F09595;
+}
+body{background:var(--black);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;min-height:100vh}
+.app{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+
+/* NAV */
+.nav{background:var(--dark);border-bottom:1px solid var(--border);padding:11px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+.nav-logo{display:flex;align-items:center;gap:9px}
+.nav-brand-main{font-size:12px;font-weight:700;letter-spacing:.28em;color:#fff;text-transform:uppercase;line-height:1.2}
+.nav-brand-sub{font-size:8.5px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+.nav-tabs{display:flex;gap:4px}
+.tab-btn{font-size:12px;padding:7px 11px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-weight:500;transition:all .15s;position:relative}
+.tab-btn.active{background:var(--p1);color:#fff;border-color:var(--p1)}
+.notif-dot{position:absolute;top:-3px;right:-3px;width:8px;height:8px;background:#EF9F27;border-radius:50%;display:none}
+.notif-dot.show{display:block}
+
+/* PAGES */
+.page{display:none;padding:16px;gap:14px;flex-direction:column;flex:1}
+.page.active{display:flex}
+.section-label{font-size:10px;font-weight:700;letter-spacing:.2em;color:var(--p3);text-transform:uppercase}
+
+/* HERO */
+.hero{background:var(--dark);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+.hero-loc{font-size:10px;letter-spacing:.22em;color:var(--p3);text-transform:uppercase;margin-bottom:5px}
+.hero-sub{font-size:12px;color:var(--muted)}
+
+/* PRICES */
+.price-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.price-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 11px}
+.price-card.featured{border:1.5px solid var(--p1)}
+.price-badge{font-size:10px;background:var(--p1);color:#fff;padding:2px 7px;border-radius:4px;display:inline-block;margin-bottom:6px}
+.price-name{font-size:12px;font-weight:700;color:#fff;margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em}
+.price-desc{font-size:11px;color:var(--muted);margin-bottom:7px;line-height:1.4}
+.price-amount{font-size:17px;font-weight:700;color:var(--p3)}
+.price-amount span{font-size:10px;color:var(--muted);font-weight:400}
+
+/* BOOKING — pasos */
+.booking-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.step-header{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.step-num-row{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.step-circle{width:20px;height:20px;border-radius:50%;background:var(--p1);font-size:11px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-title{font-size:13px;font-weight:700;color:#fff;letter-spacing:.04em}
+.step-body{padding:14px 16px}
+.form-label{font-size:11px;color:var(--muted);margin-bottom:6px;display:block;letter-spacing:.06em;text-transform:uppercase}
+.form-group{margin-bottom:12px}
+.aw-input,.aw-select{width:100%;background:var(--dark);border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;transition:border-color .15s}
+.aw-input:focus,.aw-select:focus{border-color:var(--p1)}
+
+/* CALENDARIO */
+.cal-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.cal-strip::-webkit-scrollbar{display:none}
+.cal-day{min-width:48px;height:60px;border-radius:8px;border:1px solid rgba(255,255,255,0.09);background:var(--dark);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;flex-shrink:0;transition:all .15s}
+.cal-day:hover:not(.disabled){border-color:var(--p1)}
+.cal-day.selected{background:var(--p1);border-color:var(--p1)}
+.cal-day.disabled{opacity:.28;cursor:default}
+.cal-num{font-size:15px;font-weight:700;color:#fff}
+.cal-name{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.cal-day.selected .cal-name{color:rgba(255,255,255,.75)}
+
+/* HORARIOS */
+.horarios-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:4px}
+.horario-btn{padding:10px 4px;text-align:center;border-radius:7px;border:1px solid rgba(255,255,255,0.09);font-size:13px;cursor:pointer;color:var(--muted);background:var(--dark);font-weight:600;transition:all .15s}
+.horario-btn:hover:not(.disabled){border-color:var(--p1);color:var(--p3)}
+.horario-btn.selected{background:var(--p1);color:#fff;border-color:var(--p1)}
+.horario-btn.ocupado{opacity:.3;cursor:not-allowed;text-decoration:line-through}
+.horarios-hint{font-size:11px;color:var(--muted);margin-bottom:8px;font-style:italic}
+
+/* RESUMEN */
+.resumen-box{background:var(--dark);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px}
+.resumen-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.resumen-row:last-child{border-bottom:none}
+.resumen-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.resumen-val{font-size:13px;font-weight:600;color:#fff}
+
+.submit-btn{width:100%;padding:13px;background:var(--p1);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.1em;text-transform:uppercase;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.submit-btn:hover{background:var(--p2)}
+.submit-btn:disabled{opacity:.5;cursor:not-allowed}
+.wpp-btn{width:100%;padding:12px;background:#25D366;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px}
+
+/* TOAST */
+.toast{display:none;border-radius:8px;padding:11px 14px;font-size:13px;text-align:center;font-weight:600;margin-top:8px}
+.toast.success{background:var(--s-bg);color:var(--s-c);border:1px solid var(--s-b)}
+.toast.error{background:var(--d-bg);color:var(--d-c);border:1px solid rgba(226,75,74,0.26)}
+
+/* ADMIN */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 10px;text-align:center}
+.stat-label{font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.stat-num{font-size:22px;font-weight:700;color:var(--p3)}
+.admin-tabs{display:flex;gap:5px}
+.admin-tab{font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid rgba(255,255,255,0.09);background:transparent;color:var(--muted);cursor:pointer;font-weight:600;text-transform:uppercase;letter-spacing:.07em;transition:all .15s}
+.admin-tab.active{background:var(--pfaint);color:var(--p3);border-color:var(--border)}
+.admin-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
+
+/* FILTRO FECHA */
+.filtro-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.filtro-row input{flex:1;background:var(--dark);border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:8px 11px;color:var(--text);font-size:13px;outline:none}
+.filtro-row input:focus{border-color:var(--p1)}
+.filtro-clear{font-size:11px;color:var(--p3);cursor:pointer;white-space:nowrap;padding:4px}
+
+/* TURNO CARD */
+.turno-card{background:var(--card2);border:1px solid rgba(255,255,255,0.06);border-radius:9px;padding:12px;margin-bottom:8px;transition:opacity .2s}
+.turno-card:last-child{margin-bottom:0}
+.turno-card.rechazado{opacity:.4}
+.turno-card.nuevo{border-color:var(--w-c);box-shadow:0 0 0 1px rgba(239,159,39,0.2)}
+.turno-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.turno-name{font-size:14px;font-weight:700;color:#fff}
+.turno-meta{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.6}
+.turno-meta b{color:var(--p3)}
+.status-badge{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:700;letter-spacing:.04em;white-space:nowrap;text-transform:uppercase;flex-shrink:0}
+.s-pend{background:var(--w-bg);color:var(--w-c)}
+.s-ok{background:var(--s-bg);color:var(--s-c)}
+.s-bad{background:var(--d-bg);color:var(--d-c)}
+.turno-actions{display:flex;gap:6px;flex-wrap:wrap}
+.turno-btn{font-size:11px;padding:6px 11px;border-radius:5px;border:1px solid rgba(255,255,255,0.1);background:transparent;cursor:pointer;font-weight:600;transition:all .15s}
+.turno-btn.confirm{color:var(--s-c);border-color:rgba(29,158,117,0.35)}
+.turno-btn.reject{color:var(--d-c);border-color:rgba(226,75,74,0.3)}
+.turno-btn.wpp{color:#25D366;border-color:rgba(37,211,102,0.3)}
+.horario-assign{background:var(--dark);border:1px solid rgba(255,255,255,0.1);border-radius:5px;padding:5px 8px;color:var(--text);font-size:12px;outline:none;cursor:pointer}
+.horario-assign:focus{border-color:var(--p1)}
+
+/* SERVICIOS ADMIN */
+.svc-row{display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.055)}
+.svc-row:last-child{border-bottom:none}
+.svc-fields{flex:1;display:flex;flex-direction:column;gap:6px}
+.svc-input{background:var(--dark);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;width:100%;outline:none}
+.svc-input:focus{border-color:var(--p1)}
+.svc-del{background:none;border:none;cursor:pointer;color:var(--d-c);font-size:17px;padding:3px;margin-top:3px}
+.add-svc-btn{width:100%;padding:9px;border-radius:7px;border:1px dashed rgba(140,50,200,0.38);background:transparent;color:var(--p3);cursor:pointer;font-size:12px;margin-top:8px;font-weight:600}
+.save-btn{width:100%;padding:11px;background:var(--p1);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-top:6px;letter-spacing:.1em;text-transform:uppercase}
+.save-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* HORARIOS ADMIN */
+.hor-admin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+.hor-pill{padding:9px 4px;text-align:center;border-radius:7px;border:1px solid rgba(255,255,255,0.09);font-size:12px;cursor:pointer;color:var(--muted);background:var(--dark);font-weight:600;transition:all .15s}
+.hor-pill.on{background:var(--pfaint);color:var(--p3);border-color:var(--border)}
+
+.loading{text-align:center;color:var(--muted);font-size:13px;padding:20px}
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:24px;font-style:italic}
+
+/* PASOS WIZARD */
+.wizard-steps{display:flex;gap:0;margin-bottom:4px}
+.wstep{flex:1;height:3px;background:rgba(255,255,255,0.08);transition:background .3s}
+.wstep.done{background:var(--p1)}
+.wstep.active{background:var(--p3)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- NAV -->
+  <div class="nav">
+    <div class="nav-logo">
+      <svg width="42" height="32" viewBox="0 0 92 72" fill="none">
+        <defs><linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C060F0"/><stop offset="100%" stop-color="#5510A0"/></linearGradient></defs>
+        <text x="4" y="56" font-family="Arial Black,Arial,sans-serif" font-size="58" font-weight="900" font-style="italic" fill="url(#lg1)" letter-spacing="-2">AN</text>
+        <ellipse cx="48" cy="38" rx="44" ry="14" stroke="#A030E0" stroke-width="2.5" fill="none" transform="rotate(-8 48 38)"/>
+      </svg>
+      <div>
+        <div class="nav-brand-main">A N</div>
+        <div class="nav-brand-sub">Lavadero Automotor</div>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="showPage('cliente',this)">Cliente</button>
+      <button class="tab-btn" id="btnAdmin" onclick="showPage('admin',this)">Admin<span class="notif-dot" id="notifDot"></span></button>
+    </div>
+  </div>
+
+  <!-- ══════════ PÁGINA CLIENTE ══════════ -->
+  <div class="page active" id="page-cliente">
+    <div class="hero">
+      <div class="hero-loc">📍 Cipolletti · Juan Bautista Alberdi 651</div>
+      <div class="hero-sub">Reservá tu turno · (299) 415-9691</div>
+    </div>
+
+    <div class="section-label">Servicios y precios</div>
+    <div class="price-grid" id="preciosGrid">
+      <div class="loading" style="grid-column:span 2">Cargando…</div>
+    </div>
+
+    <div class="section-label">Reservar turno</div>
+
+    <!-- WIZARD PASOS -->
+    <div class="wizard-steps">
+      <div class="wstep active" id="ws1"></div>
+      <div class="wstep" id="ws2"></div>
+      <div class="wstep" id="ws3"></div>
+      <div class="wstep" id="ws4"></div>
+    </div>
+
+    <!-- PASO 1: datos -->
+    <div class="booking-card" id="step1">
+      <div class="step-header">
+        <div class="step-num-row"><div class="step-circle">1</div><div class="step-title">Tus datos y servicio</div></div>
+      </div>
+      <div class="step-body">
+        <div class="form-group"><label class="form-label">Nombre completo</label><input class="aw-input" id="inputNombre" type="text" placeholder="Ej: Juan Pérez"></div>
+        <div class="form-group"><label class="form-label">WhatsApp</label><input class="aw-input" id="inputWpp" type="tel" placeholder="+54 9 299..."></div>
+        <div class="form-group"><label class="form-label">Servicio</label><select class="aw-select" id="inputServicio"><option value="">— Elegí —</option></select></div>
+        <button class="submit-btn" onclick="irPaso2()">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- PASO 2: fecha -->
+    <div class="booking-card" id="step2" style="display:none">
+      <div class="step-header">
+        <div class="step-num-row"><div class="step-circle">2</div><div class="step-title">Elegí un día</div></div>
+      </div>
+      <div class="step-body">
+        <div class="cal-strip" id="calStrip"></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="submit-btn" style="background:var(--card2);color:var(--muted);flex:0 0 80px" onclick="irPaso(1)">← Volver</button>
+          <button class="submit-btn" style="flex:1" onclick="irPaso3()">Ver horarios →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 3: horario -->
+    <div class="booking-card" id="step3" style="display:none">
+      <div class="step-header">
+        <div class="step-num-row"><div class="step-circle">3</div><div class="step-title">Elegí un horario</div></div>
+      </div>
+      <div class="step-body">
+        <div class="horarios-hint" id="horariosHint">Seleccioná un horario disponible</div>
+        <div class="horarios-grid" id="horariosGrid"><div class="loading">Cargando…</div></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="submit-btn" style="background:var(--card2);color:var(--muted);flex:0 0 80px" onclick="irPaso(2)">← Volver</button>
+          <button class="submit-btn" style="flex:1" onclick="irPaso4()">Confirmar →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 4: resumen y envío -->
+    <div class="booking-card" id="step4" style="display:none">
+      <div class="step-header">
+        <div class="step-num-row"><div class="step-circle">4</div><div class="step-title">Confirmá tu turno</div></div>
+      </div>
+      <div class="step-body">
+        <div class="resumen-box" id="resumenBox"></div>
+        <button class="submit-btn" id="btnSolicitar" onclick="solicitarTurno()">✓ Confirmar turno</button>
+        <div style="margin-top:8px">
+          <button class="submit-btn" style="background:var(--card2);color:var(--muted)" onclick="irPaso(3)">← Volver</button>
+        </div>
+        <div class="toast" id="toastCliente"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ PÁGINA ADMIN ══════════ -->
+  <div class="page" id="page-admin">
+    <div class="stat-row" id="statsRow">
+      <div class="stat-card"><div class="stat-label">Hoy</div><div class="stat-num" id="statHoy">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pendientes</div><div class="stat-num" id="statPend">—</div></div>
+      <div class="stat-card"><div class="stat-label">Este mes</div><div class="stat-num" id="statMes">—</div></div>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="showAdminTab('turnos',this)">Turnos</button>
+      <button class="admin-tab" onclick="showAdminTab('servicios',this)">Servicios</button>
+      <button class="admin-tab" onclick="showAdminTab('horarios',this)">Horarios</button>
+    </div>
+
+    <!-- TAB TURNOS -->
+    <div id="tab-turnos">
+      <div class="filtro-row">
+        <input type="date" id="filtroFecha" onchange="filtrarTurnos()">
+        <span class="filtro-clear" onclick="limpiarFiltro()">Ver todos</span>
+      </div>
+      <div id="turnosContainer"><div class="loading">Cargando turnos…</div></div>
+    </div>
+
+    <!-- TAB SERVICIOS -->
+    <div id="tab-servicios" style="display:none">
+      <div class="admin-card">
+        <div id="svcEditorContainer"><div class="loading">Cargando…</div></div>
+        <button class="add-svc-btn" onclick="addSvcRow()">+ Agregar servicio</button>
+        <button class="save-btn" id="btnSaveServicios" onclick="guardarServicios()">Guardar cambios</button>
+        <div class="toast" id="toastServicios"></div>
+      </div>
+    </div>
+
+    <!-- TAB HORARIOS -->
+    <div id="tab-horarios" style="display:none">
+      <div class="admin-card">
+        <div style="font-size:11px;color:var(--muted)">Tocá para habilitar / deshabilitar</div>
+        <div class="hor-admin-grid" id="horariosAdminGrid"><div class="loading">Cargando…</div></div>
+        <button class="save-btn" style="margin-top:10px" onclick="guardarHorarios()">Guardar horarios</button>
+        <div class="toast" id="toastHorarios"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+// ═══════════════════════════════════════════════════
+// ⚙️  CONFIGURACIÓN — reemplazá estos 2 valores
+const SUPABASE_URL = 'https://bchpmoslidwpmxmbeguy.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0-z7spCgZ62Xv-Xha-dFwA_Lu0-ukua';
+// Número de WhatsApp del negocio (con código país, sin espacios ni +)
+const WPP_NEGOCIO = '5492994159691';
+// ═══════════════════════════════════════════════════
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Estado del wizard
+let wizard = { nombre:'', wpp:'', servicioId:'', servicioNombre:'', fecha:'', fechaLabel:'', horario:'' };
+let horariosActivos = [];
+let serviciosData = [];
+let horariosAdminData = [];
+let todosLosTurnos = [];
+let pasoActual = 1;
+
+// ── INIT ─────────────────────────────────────────
+async function init() {
+  buildCalendario();
+  await cargarServicios();
+  // Setear fecha de hoy en filtro admin
+  document.getElementById('filtroFecha').value = hoy();
+}
+
+function hoy() { return new Date().toISOString().split('T')[0]; }
+
+// ── WIZARD NAVEGACIÓN ────────────────────────────
+function setWizardStep(n) {
+  pasoActual = n;
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('step'+i);
+    if (el) el.style.display = i === n ? 'block' : 'none';
+    const ws = document.getElementById('ws'+i);
+    if (ws) ws.className = 'wstep ' + (i < n ? 'done' : i === n ? 'active' : '');
+  }
+  window.scrollTo(0, 0);
+}
+
+function irPaso(n) { setWizardStep(n); }
+
+function irPaso2() {
+  wizard.nombre = document.getElementById('inputNombre').value.trim();
+  wizard.wpp = document.getElementById('inputWpp').value.trim();
+  const sel = document.getElementById('inputServicio');
+  wizard.servicioId = sel.value;
+  wizard.servicioNombre = sel.options[sel.selectedIndex]?.text || '';
+  if (!wizard.nombre || !wizard.wpp || !wizard.servicioId) {
+    showToast('toastCliente', 'Completá todos los campos', 'error'); return;
+  }
+  setWizardStep(2);
+}
+
+async function irPaso3() {
+  if (!wizard.fecha) { alert('Elegí un día primero'); return; }
+  // Cargar horarios disponibles para esa fecha
+  await cargarHorariosDisponibles(wizard.fecha);
+  setWizardStep(3);
+}
+
+function irPaso4() {
+  if (!wizard.horario) { alert('Elegí un horario'); return; }
+  // Armar resumen
+  const box = document.getElementById('resumenBox');
+  box.innerHTML = [
+    ['Nombre', wizard.nombre],
+    ['WhatsApp', wizard.wpp],
+    ['Servicio', wizard.servicioNombre],
+    ['Día', wizard.fechaLabel],
+    ['Horario', wizard.horario],
+  ].map(([l,v]) => `<div class="resumen-row"><span class="resumen-label">${l}</span><span class="resumen-val">${v}</span></div>`).join('');
+  setWizardStep(4);
+}
+
+// ── CALENDARIO ───────────────────────────────────
+function buildCalendario() {
+  const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const base = new Date();
+  const strip = document.getElementById('calStrip');
+  strip.innerHTML = '';
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    const dow = d.getDay();
+    const dateStr = d.toISOString().split('T')[0];
+    const el = document.createElement('div');
+    el.className = 'cal-day' + (dow === 0 ? ' disabled' : '');
+    const dLabel = d.toLocaleDateString('es-AR', { weekday:'short', day:'numeric', month:'short' });
+    el.innerHTML = `<span class="cal-name">${dias[dow]}</span><span class="cal-num">${d.getDate()}</span>`;
+    if (dow !== 0) {
+      el.onclick = () => {
+        document.querySelectorAll('.cal-day').forEach(x => x.classList.remove('selected'));
+        el.classList.add('selected');
+        wizard.fecha = dateStr;
+        wizard.fechaLabel = dLabel;
+        wizard.horario = '';
+      };
+    }
+    strip.appendChild(el);
+  }
+}
+
+// ── HORARIOS DISPONIBLES (cliente) ───────────────
+async function cargarHorariosDisponibles(fecha) {
+  const grid = document.getElementById('horariosGrid');
+  grid.innerHTML = '<div class="loading">Verificando disponibilidad…</div>';
+  wizard.horario = '';
+
+  // Turnos ya reservados para esa fecha
+  const { data: ocupados } = await db.from('turnos')
+    .select('horario')
+    .eq('fecha', fecha)
+    .neq('estado', 'rechazado');
+  const ocupadosSet = new Set((ocupados || []).map(t => t.horario));
+
+  // Horarios habilitados por el admin
+  const { data: horas } = await db.from('horarios').select('*').eq('activo', true).order('orden');
+  horariosActivos = horas || [];
+
+  const hint = document.getElementById('horariosHint');
+  hint.textContent = `Horarios disponibles para ${wizard.fechaLabel}`;
+
+  grid.innerHTML = '';
+  if (!horariosActivos.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:span 3">Sin horarios habilitados</div>';
+    return;
+  }
+  horariosActivos.forEach(h => {
+    const esOcupado = ocupadosSet.has(h.hora);
+    const el = document.createElement('div');
+    el.className = 'horario-btn' + (esOcupado ? ' ocupado' : '');
+    el.textContent = h.hora;
+    if (!esOcupado) {
+      el.onclick = () => {
+        document.querySelectorAll('.horario-btn').forEach(x => x.classList.remove('selected'));
+        el.classList.add('selected');
+        wizard.horario = h.hora;
+      };
+    }
+    grid.appendChild(el);
+  });
+}
+
+// ── SOLICITAR TURNO ──────────────────────────────
+async function solicitarTurno() {
+  const btn = document.getElementById('btnSolicitar');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+
+  const { error } = await db.from('turnos').insert({
+    nombre_cliente: wizard.nombre,
+    whatsapp: wizard.wpp,
+    servicio_id: wizard.servicioId,
+    servicio_nombre: wizard.servicioNombre,
+    fecha: wizard.fecha,
+    horario: wizard.horario,
+    estado: 'pendiente'
+  });
+
+  btn.disabled = false; btn.textContent = '✓ Confirmar turno';
+
+  if (error) {
+    showToast('toastCliente', 'Error al enviar. Intentá de nuevo.', 'error');
+    return;
+  }
+
+  // Mensaje WhatsApp al negocio
+  const msg = encodeURIComponent(
+    `🚗 *Nuevo turno AN Lavadero*\n\n` +
+    `👤 *Nombre:* ${wizard.nombre}\n` +
+    `📱 *WhatsApp:* ${wizard.wpp}\n` +
+    `🧼 *Servicio:* ${wizard.servicioNombre}\n` +
+    `📅 *Día:* ${wizard.fechaLabel}\n` +
+    `🕐 *Horario:* ${wizard.horario}`
+  );
+
+  showToast('toastCliente', '¡Turno solicitado! Redirigiendo a WhatsApp…', 'success');
+  setTimeout(() => {
+    window.open(`https://wa.me/${WPP_NEGOCIO}?text=${msg}`, '_blank');
+  }, 1200);
+
+  // Reset
+  setTimeout(() => {
+    wizard = { nombre:'', wpp:'', servicioId:'', servicioNombre:'', fecha:'', fechaLabel:'', horario:'' };
+    document.getElementById('inputNombre').value = '';
+    document.getElementById('inputWpp').value = '';
+    document.getElementById('inputServicio').value = '';
+    document.querySelectorAll('.cal-day').forEach(x => x.classList.remove('selected'));
+    setWizardStep(1);
+  }, 3000);
+}
+
+// ── SERVICIOS (cliente) ──────────────────────────
+async function cargarServicios() {
+  const { data } = await db.from('servicios').select('*').eq('activo', true).order('orden');
+  serviciosData = data || [];
+  renderPreciosCliente(serviciosData);
+  const sel = document.getElementById('inputServicio');
+  sel.innerHTML = '<option value="">— Elegí un servicio —</option>' +
+    serviciosData.map(s => `<option value="${s.id}">${s.nombre}</option>`).join('');
+}
+
+function renderPreciosCliente(data) {
+  const g = document.getElementById('preciosGrid'); g.innerHTML = '';
+  data.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'price-card' + (s.destacado ? ' featured' : '');
+    d.innerHTML = (s.destacado ? '<div class="price-badge">Más pedido</div>' : '') +
+      `<div class="price-name">${s.nombre}</div>` +
+      `<div class="price-desc">${s.descripcion || ''}</div>` +
+      `<div class="price-amount">$${Number(s.precio).toLocaleString('es-AR')} <span>ARS</span></div>`;
+    g.appendChild(d);
+  });
+}
+
+// ── ADMIN: TURNOS ────────────────────────────────
+async function cargarTurnos() {
+  const { data } = await db.from('turnos').select('*').order('fecha').order('horario');
+  todosLosTurnos = data || [];
+  actualizarStats(todosLosTurnos);
+  filtrarTurnos();
+  // Notif dot si hay pendientes
+  const pendientes = todosLosTurnos.filter(t => t.estado === 'pendiente').length;
+  document.getElementById('notifDot').className = 'notif-dot' + (pendientes > 0 ? ' show' : '');
+}
+
+function actualizarStats(data) {
+  const h = hoy();
+  const mes = h.substring(0, 7);
+  document.getElementById('statHoy').textContent = data.filter(t => t.fecha === h).length;
+  document.getElementById('statPend').textContent = data.filter(t => t.estado === 'pendiente').length;
+  document.getElementById('statMes').textContent = data.filter(t => t.fecha?.startsWith(mes)).length;
+}
+
+function filtrarTurnos() {
+  const fecha = document.getElementById('filtroFecha').value;
+  const filtrados = fecha ? todosLosTurnos.filter(t => t.fecha === fecha) : todosLosTurnos;
+  renderTurnos(filtrados);
+}
+
+function limpiarFiltro() {
+  document.getElementById('filtroFecha').value = '';
+  renderTurnos(todosLosTurnos);
+}
+
+function renderTurnos(data) {
+  const c = document.getElementById('turnosContainer');
+  if (!data.length) { c.innerHTML = '<div class="empty">No hay turnos para esta fecha</div>'; return; }
+  c.innerHTML = '';
+
+  // Agrupar por fecha
+  const grupos = {};
+  data.forEach(t => {
+    if (!grupos[t.fecha]) grupos[t.fecha] = [];
+    grupos[t.fecha].push(t);
+  });
+
+  Object.keys(grupos).sort().forEach(fecha => {
+    const label = new Date(fecha + 'T12:00:00').toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long' });
+    const header = document.createElement('div');
+    header.style.cssText = 'font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.12em;padding:8px 0 6px';
+    header.textContent = label;
+    c.appendChild(header);
+
+    grupos[fecha].forEach(t => {
+      const card = document.createElement('div');
+      const esNuevo = t.estado === 'pendiente' && (Date.now() - new Date(t.created_at).getTime()) < 3600000;
+      card.className = 'turno-card' + (t.estado === 'rechazado' ? ' rechazado' : '') + (esNuevo ? ' nuevo' : '');
+      card.id = 'tc-' + t.id;
+
+      const badgeClass = t.estado === 'pendiente' ? 's-pend' : t.estado === 'confirmado' ? 's-ok' : 's-bad';
+      const badgeLabel = t.estado === 'pendiente' ? 'Pendiente' : t.estado === 'confirmado' ? 'Confirmado' : 'Rechazado';
+
+      // Select horario para asignar
+      const horariosOpts = horariosActivos.map(h =>
+        `<option value="${h.hora}" ${t.horario === h.hora ? 'selected' : ''}>${h.hora}</option>`
+      ).join('');
+
+      const actions = t.estado === 'pendiente' ? `
+        <div class="turno-actions">
+          <select class="horario-assign" id="ha-${t.id}" onchange="asignarHorario('${t.id}', this.value)">
+            <option value="">— Horario —</option>
+            ${horariosOpts}
+          </select>
+          <button class="turno-btn confirm" onclick="cambiarEstado('${t.id}','confirmado')">✓ Confirmar</button>
+          <button class="turno-btn reject" onclick="cambiarEstado('${t.id}','rechazado')">✕ Rechazar</button>
+          <button class="turno-btn wpp" onclick="abrirWpp('${t.whatsapp}','${t.nombre_cliente}','${t.servicio_nombre}','${t.fecha}','${t.horario||''}')">💬 WPP</button>
+        </div>` : `
+        <div class="turno-actions">
+          <button class="turno-btn wpp" onclick="abrirWpp('${t.whatsapp}','${t.nombre_cliente}','${t.servicio_nombre}','${t.fecha}','${t.horario||''}')">💬 WhatsApp</button>
+        </div>`;
+
+      card.innerHTML = `
+        <div class="turno-top">
+          <div>
+            <div class="turno-name">${t.nombre_cliente} ${esNuevo ? '🆕' : ''}</div>
+            <div class="turno-meta">
+              <b>${t.servicio_nombre}</b><br>
+              🕐 ${t.horario || 'Sin horario'} · 📱 ${t.whatsapp}
+            </div>
+          </div>
+          <span class="status-badge ${badgeClass}" id="badge-${t.id}">${badgeLabel}</span>
+        </div>
+        ${actions}`;
+      c.appendChild(card);
+    });
+  });
+}
+
+async function asignarHorario(id, horario) {
+  await db.from('turnos').update({ horario }).eq('id', id);
+  const t = todosLosTurnos.find(x => x.id === id);
+  if (t) t.horario = horario;
+}
+
+async function cambiarEstado(id, estado) {
+  // Si confirma y no tiene horario asignado, advertir
+  const sel = document.getElementById('ha-' + id);
+  if (estado === 'confirmado' && sel && !sel.value) {
+    if (!confirm('¿Confirmar sin asignar horario?')) return;
+  }
+  const horario = sel?.value || undefined;
+  const updateData = { estado };
+  if (horario) updateData.horario = horario;
+  await db.from('turnos').update(updateData).eq('id', id);
+  await cargarTurnos();
+  await cargarHorariosAdminPreload();
+}
+
+function abrirWpp(wpp, nombre, servicio, fecha, horario) {
+  const fechaLabel = new Date(fecha + 'T12:00:00').toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long' });
+  const msg = encodeURIComponent(
+    `Hola ${nombre}! 👋 Te confirmamos tu turno en *AN Lavadero Automotor*:\n\n` +
+    `🧼 Servicio: ${servicio}\n📅 Día: ${fechaLabel}\n🕐 Horario: ${horario || 'A confirmar'}\n\n` +
+    `📍 Juan Bautista Alberdi 651, Cipolletti`
+  );
+  window.open(`https://wa.me/${wpp.replace(/\D/g,'')}?text=${msg}`, '_blank');
+}
+
+// ── ADMIN: SERVICIOS ─────────────────────────────
+async function cargarServiciosAdmin() {
+  const { data } = await db.from('servicios').select('*').order('orden');
+  serviciosData = data || [];
+  renderSvcEditor(serviciosData);
+}
+
+function renderSvcEditor(data) {
+  const c = document.getElementById('svcEditorContainer'); c.innerHTML = '';
+  const iS = 'background:var(--dark);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;width:100%;outline:none;';
+  data.forEach((s) => {
+    const row = document.createElement('div'); row.className = 'svc-row'; row.dataset.id = s.id;
+    row.innerHTML = `<div class="svc-fields">
+      <input style="${iS}font-weight:700;text-transform:uppercase;letter-spacing:.05em" data-f="nombre" value="${s.nombre}" placeholder="Nombre">
+      <input style="${iS}color:var(--muted)" data-f="descripcion" value="${s.descripcion||''}" placeholder="Descripción">
+      <div style="display:flex;align-items:center;gap:7px">
+        <input style="${iS}color:var(--p3);font-weight:700;width:105px" type="number" data-f="precio" value="${s.precio}">
+        <span style="font-size:11px;color:var(--muted)">ARS</span>
+        <label style="display:flex;align-items:center;gap:3px;margin-left:auto;font-size:10px;color:var(--muted);cursor:pointer;text-transform:uppercase">
+          <input type="checkbox" data-f="destacado" ${s.destacado?'checked':''}> Top
+        </label>
+        <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);cursor:pointer;text-transform:uppercase">
+          <input type="checkbox" data-f="activo" ${s.activo?'checked':''}> Visible
+        </label>
+      </div>
+    </div>
+    <button class="svc-del" onclick="deleteSvc('${s.id}',this)">🗑</button>`;
+    c.appendChild(row);
+  });
+  c.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const row = e.target.closest('.svc-row');
+      const id = row.dataset.id;
+      const s = serviciosData.find(x => x.id === id);
+      if (!s) return;
+      const f = e.target.dataset.f;
+      s[f] = f === 'destacado' || f === 'activo' ? e.target.checked : e.target.value;
+    });
+  });
+}
+
+function addSvcRow() {
+  serviciosData.push({ id:'new-'+Date.now(), nombre:'', descripcion:'', precio:0, destacado:false, activo:true, orden:99 });
+  renderSvcEditor(serviciosData);
+}
+
+async function deleteSvc(id) {
+  if (id.startsWith('new-')) { serviciosData = serviciosData.filter(s=>s.id!==id); renderSvcEditor(serviciosData); return; }
+  await db.from('servicios').update({ activo:false }).eq('id', id);
+  serviciosData = serviciosData.filter(s=>s.id!==id);
+  renderSvcEditor(serviciosData);
+}
+
+async function guardarServicios() {
+  const btn = document.getElementById('btnSaveServicios');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  const rows = document.querySelectorAll('#svcEditorContainer .svc-row');
+  for (const row of rows) {
+    const id = row.dataset.id;
+    const s = serviciosData.find(x=>x.id===id);
+    if (!s || !s.nombre) continue;
+    const payload = { nombre:s.nombre, descripcion:s.descripcion||'', precio:parseInt(s.precio)||0, destacado:!!s.destacado, activo:!!s.activo };
+    if (id.startsWith('new-')) await db.from('servicios').insert({...payload, orden:99});
+    else await db.from('servicios').update(payload).eq('id', id);
+  }
+  btn.disabled = false; btn.textContent = 'Guardar cambios';
+  showToast('toastServicios', '¡Guardado! Los cambios ya se ven a los clientes.', 'success');
+  await cargarServicios();
+  await cargarServiciosAdmin();
+}
+
+// ── ADMIN: HORARIOS ──────────────────────────────
+async function cargarHorariosAdmin() {
+  const { data } = await db.from('horarios').select('*').order('orden');
+  horariosAdminData = data || [];
+  const grid = document.getElementById('horariosAdminGrid'); grid.innerHTML = '';
+  horariosAdminData.forEach(h => {
+    const el = document.createElement('div');
+    el.className = 'hor-pill' + (h.activo ? ' on' : '');
+    el.textContent = h.hora; el.dataset.id = h.id;
+    el.onclick = () => { h.activo = !h.activo; el.className = 'hor-pill' + (h.activo ? ' on' : ''); };
+    grid.appendChild(el);
+  });
+}
+
+async function cargarHorariosAdminPreload() {
+  const { data } = await db.from('horarios').select('*').eq('activo', true).order('orden');
+  horariosActivos = data || [];
+}
+
+async function guardarHorarios() {
+  for (const h of horariosAdminData) await db.from('horarios').update({ activo:h.activo }).eq('id', h.id);
+  horariosActivos = horariosAdminData.filter(h => h.activo);
+  showToast('toastHorarios', 'Horarios actualizados.', 'success');
+}
+
+// ── NAVEGACIÓN ───────────────────────────────────
+function showPage(p, btn) {
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  btn.classList.add('active');
+  if (p === 'admin') { cargarTurnos(); cargarHorariosAdminPreload(); }
+}
+
+function showAdminTab(tab, btn) {
+  ['turnos','servicios','horarios'].forEach(t =>
+    document.getElementById('tab-'+t).style.display = t === tab ? 'block' : 'none');
+  document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'turnos') cargarTurnos();
+  if (tab === 'servicios') cargarServiciosAdmin();
+  if (tab === 'horarios') cargarHorariosAdmin();
+}
+
+// ── UTILS ────────────────────────────────────────
+function showToast(id, msg, type) {
+  const t = document.getElementById(id);
+  t.textContent = msg; t.className = 'toast '+type; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3500);
+}
+
+// ── ARRANCAR ─────────────────────────────────────
+init();
+</script>
+</body>
+</html>
