@@ -397,6 +397,27 @@ let agendaDiasActivos = new Set([1,2,3,4,5,6]);
 let agendaSemanaBase = 0;
 let slotsBloqueados = new Set();
 
+// Horarios base para que la reserva funcione aunque la tabla "horarios" esté vacía
+// o aunque todavía no se haya aplicado la configuración desde Admin.
+function horariosBase() {
+  const cfg = JSON.parse(localStorage.getItem('agendaConfig') || '{}');
+  const inicio = cfg.inicio || '08:00';
+  const fin = cfg.fin || '18:00';
+  const duracion = cfg.duracion || 30;
+  const dias = Array.isArray(cfg.dias) && cfg.dias.length ? cfg.dias.map(Number) : [1,2,3,4,5,6];
+  return generarSlots(inicio, fin, duracion).map((hora, i) => ({
+    id:'base-'+i, hora, activo:true, orden:i, dias_activos:dias
+  }));
+}
+
+function horarioDisponibleParaDia(h, dow) {
+  if (!h) return false;
+  if (!h.dias_activos) return true;
+  if (!Array.isArray(h.dias_activos)) return true;
+  if (!h.dias_activos.length) return true;
+  return h.dias_activos.map(Number).includes(Number(dow));
+}
+
 function hoy() { return new Date().toISOString().split('T')[0]; }
 function timeToMin(t) { const [h,m] = t.split(':').map(Number); return h*60+m; }
 function minToTime(m) { return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
@@ -504,9 +525,12 @@ async function cargarHorariosDisponibles(fecha) {
     ...(bloq||[]).map(b => b.hora)
   ]);
 
-  const { data: horas } = await db.from('horarios').select('*').eq('activo', true).order('orden');
-  horariosActivos = horas || [];
-  const horariosDelDia = horariosActivos.filter(h => !h.dias_activos || h.dias_activos.includes(dow));
+  const { data: horas, error: horasError } = await db.from('horarios').select('*').eq('activo', true).order('orden');
+
+  // Antes, si la tabla horarios estaba vacía, el cliente veía siempre
+  // "Sin turnos disponibles". Ahora cae a horarios base.
+  horariosActivos = (!horasError && horas && horas.length) ? horas : horariosBase();
+  const horariosDelDia = horariosActivos.filter(h => horarioDisponibleParaDia(h, dow));
 
   document.getElementById('horariosHint').textContent = `Horarios disponibles para ${wizard.fechaLabel}`;
   grid.innerHTML = '';
@@ -632,7 +656,7 @@ function renderTurnos(data) {
       card.className = 'turno-card' + (t.estado==='rechazado'?' rechazado':'') + (esNuevo?' nuevo':'');
       const badgeClass = t.estado==='pendiente'?'s-pend':t.estado==='confirmado'?'s-ok':'s-bad';
       const badgeLabel = t.estado==='pendiente'?'Pendiente':t.estado==='confirmado'?'Confirmado':'Rechazado';
-      const horariosOpts = getHorariosOptionsParaFecha(t.fecha, t.horario);
+      const horariosOpts = horariosActivos.map(h => `<option value="${h.hora}" ${t.horario===h.hora?'selected':''}>${h.hora}</option>`).join('');
 
       let actionsHtml = '';
       if (t.estado === 'pendiente') {
@@ -667,20 +691,6 @@ function renderTurnos(data) {
   });
 }
 
-
-function getHorariosOptionsParaFecha(fecha, selectedHora='') {
-  const dow = new Date(fecha + 'T12:00:00').getDay();
-  let lista = (horariosActivos || []).filter(h => !h.dias_activos || h.dias_activos.includes(dow));
-  if (!lista.length) lista = horariosActivos || [];
-  const existeSeleccionado = selectedHora && lista.some(h => h.hora === selectedHora);
-  let html = '';
-  if (selectedHora && !existeSeleccionado) {
-    html += `<option value="${selectedHora}" selected>${selectedHora}</option>`;
-  }
-  html += lista.map(h => `<option value="${h.hora}" ${selectedHora===h.hora?'selected':''}>${h.hora}</option>`).join('');
-  return html;
-}
-
 async function cambiarEstado(id, estado) {
   const sel = document.getElementById('ha-'+id);
   if (estado === 'confirmado' && sel && !sel.value) {
@@ -707,7 +717,7 @@ async function editarTurno(id) {
   overlay.id = 'editModal';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px';
   const svcOpts = serviciosData.map(s => `<option value="${s.id}" ${t.servicio_id==s.id?'selected':''}>${s.nombre}</option>`).join('');
-  const horOpts = getHorariosOptionsParaFecha(t.fecha, t.horario);
+  const horOpts = horariosActivos.map(h => `<option value="${h.hora}" ${t.horario===h.hora?'selected':''}>${h.hora}</option>`).join('');
   overlay.innerHTML = `
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;width:100%;max-width:360px">
       <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:16px">✏️ Editar turno</div>
@@ -822,27 +832,12 @@ async function deleteSvc(id) {
   if (!confirm('¿Eliminar este servicio?')) return;
   if (String(id).startsWith('new-')) {
     serviciosData = serviciosData.filter(s => s.id !== id);
-    renderSvcEditor(serviciosData);
-    return;
-  }
-
-  const { error } = await db.from('servicios').delete().eq('id', id);
-
-  // Si Supabase no permite borrar porque el servicio ya fue usado en turnos,
-  // lo dejamos inactivo para que desaparezca del cliente y del selector.
-  if (error) {
-    const { error: softError } = await db.from('servicios').update({ activo:false }).eq('id', id);
-    if (softError) {
-      showToast('toastServicios', 'No se pudo eliminar el servicio: ' + softError.message, 'error');
-      return;
-    }
-    showToast('toastServicios', 'Servicio ocultado porque ya tenía turnos asociados', 'success');
   } else {
-    showToast('toastServicios', 'Servicio eliminado', 'success');
+    await db.from('servicios').delete().eq('id', id);
+    serviciosData = serviciosData.filter(s => s.id !== id);
   }
-
+  renderSvcEditor(serviciosData);
   await cargarServicios();
-  await cargarServiciosAdmin();
 }
 
 async function guardarServicios() {
@@ -913,8 +908,8 @@ async function aplicarConfigAgenda() {
 }
 
 async function cargarHorariosPreload() {
-  const { data } = await db.from('horarios').select('*').eq('activo', true).order('orden');
-  horariosActivos = data || [];
+  const { data, error } = await db.from('horarios').select('*').eq('activo', true).order('orden');
+  horariosActivos = (!error && data && data.length) ? data : horariosBase();
 }
 
 async function cargarHorariosAdmin() {
@@ -1012,7 +1007,7 @@ function showPage(p, btn) {
   document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
   if (btn) btn.classList.add('active');
-  if (p === 'admin') { (async()=>{ await cargarHorariosPreload(); await cargarTurnos(); })(); }
+  if (p === 'admin') { cargarTurnos(); cargarHorariosPreload(); }
 }
 
 function showAdminTab(tab, btn) {
@@ -1020,7 +1015,7 @@ function showAdminTab(tab, btn) {
     document.getElementById('tab-'+t).style.display = t===tab ? 'block' : 'none');
   document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  if (tab==='turnos') { cargarHorariosPreload().then(cargarTurnos); }
+  if (tab==='turnos') cargarTurnos();
   if (tab==='servicios') cargarServiciosAdmin();
   if (tab==='horarios') cargarHorariosAdmin();
 }
