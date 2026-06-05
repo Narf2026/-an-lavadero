@@ -632,7 +632,7 @@ function renderTurnos(data) {
       card.className = 'turno-card' + (t.estado==='rechazado'?' rechazado':'') + (esNuevo?' nuevo':'');
       const badgeClass = t.estado==='pendiente'?'s-pend':t.estado==='confirmado'?'s-ok':'s-bad';
       const badgeLabel = t.estado==='pendiente'?'Pendiente':t.estado==='confirmado'?'Confirmado':'Rechazado';
-      const horariosOpts = horariosActivos.map(h => `<option value="${h.hora}" ${t.horario===h.hora?'selected':''}>${h.hora}</option>`).join('');
+      const horariosOpts = getHorariosOptionsParaFecha(t.fecha, t.horario);
 
       let actionsHtml = '';
       if (t.estado === 'pendiente') {
@@ -667,6 +667,20 @@ function renderTurnos(data) {
   });
 }
 
+
+function getHorariosOptionsParaFecha(fecha, selectedHora='') {
+  const dow = new Date(fecha + 'T12:00:00').getDay();
+  let lista = (horariosActivos || []).filter(h => !h.dias_activos || h.dias_activos.includes(dow));
+  if (!lista.length) lista = horariosActivos || [];
+  const existeSeleccionado = selectedHora && lista.some(h => h.hora === selectedHora);
+  let html = '';
+  if (selectedHora && !existeSeleccionado) {
+    html += `<option value="${selectedHora}" selected>${selectedHora}</option>`;
+  }
+  html += lista.map(h => `<option value="${h.hora}" ${selectedHora===h.hora?'selected':''}>${h.hora}</option>`).join('');
+  return html;
+}
+
 async function cambiarEstado(id, estado) {
   const sel = document.getElementById('ha-'+id);
   if (estado === 'confirmado' && sel && !sel.value) {
@@ -693,7 +707,7 @@ async function editarTurno(id) {
   overlay.id = 'editModal';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px';
   const svcOpts = serviciosData.map(s => `<option value="${s.id}" ${t.servicio_id==s.id?'selected':''}>${s.nombre}</option>`).join('');
-  const horOpts = horariosActivos.map(h => `<option value="${h.hora}" ${t.horario===h.hora?'selected':''}>${h.hora}</option>`).join('');
+  const horOpts = getHorariosOptionsParaFecha(t.fecha, t.horario);
   overlay.innerHTML = `
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;width:100%;max-width:360px">
       <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:16px">✏️ Editar turno</div>
@@ -808,12 +822,27 @@ async function deleteSvc(id) {
   if (!confirm('¿Eliminar este servicio?')) return;
   if (String(id).startsWith('new-')) {
     serviciosData = serviciosData.filter(s => s.id !== id);
-  } else {
-    await db.from('servicios').delete().eq('id', id);
-    serviciosData = serviciosData.filter(s => s.id !== id);
+    renderSvcEditor(serviciosData);
+    return;
   }
-  renderSvcEditor(serviciosData);
+
+  const { error } = await db.from('servicios').delete().eq('id', id);
+
+  // Si Supabase no permite borrar porque el servicio ya fue usado en turnos,
+  // lo dejamos inactivo para que desaparezca del cliente y del selector.
+  if (error) {
+    const { error: softError } = await db.from('servicios').update({ activo:false }).eq('id', id);
+    if (softError) {
+      showToast('toastServicios', 'No se pudo eliminar el servicio: ' + softError.message, 'error');
+      return;
+    }
+    showToast('toastServicios', 'Servicio ocultado porque ya tenía turnos asociados', 'success');
+  } else {
+    showToast('toastServicios', 'Servicio eliminado', 'success');
+  }
+
   await cargarServicios();
+  await cargarServiciosAdmin();
 }
 
 async function guardarServicios() {
@@ -983,7 +1012,7 @@ function showPage(p, btn) {
   document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
   if (btn) btn.classList.add('active');
-  if (p === 'admin') { cargarTurnos(); cargarHorariosPreload(); }
+  if (p === 'admin') { (async()=>{ await cargarHorariosPreload(); await cargarTurnos(); })(); }
 }
 
 function showAdminTab(tab, btn) {
@@ -991,7 +1020,7 @@ function showAdminTab(tab, btn) {
     document.getElementById('tab-'+t).style.display = t===tab ? 'block' : 'none');
   document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  if (tab==='turnos') cargarTurnos();
+  if (tab==='turnos') { cargarHorariosPreload().then(cargarTurnos); }
   if (tab==='servicios') cargarServiciosAdmin();
   if (tab==='horarios') cargarHorariosAdmin();
 }
