@@ -199,7 +199,7 @@ body{background:var(--black);color:var(--text);font-family:'Segoe UI',Arial,sans
   <!-- NAV -->
   <div class="nav">
     <div class="nav-logo">
-      <svg width="42" height="32" viewBox="0 0 92 72" fill="none" onclick="logoTap()" style="cursor:pointer;-webkit-tap-highlight-color:transparent">
+      <svg width="42" height="32" viewBox="0 0 92 72" fill="none" id="logoSvg" style="cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none">
         <defs><linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C060F0"/><stop offset="100%" stop-color="#5510A0"/></linearGradient></defs>
         <text x="4" y="56" font-family="Arial Black,Arial,sans-serif" font-size="58" font-weight="900" font-style="italic" fill="url(#lg1)" letter-spacing="-2">AN</text>
         <ellipse cx="48" cy="38" rx="44" ry="14" stroke="#A030E0" stroke-width="2.5" fill="none" transform="rotate(-8 48 38)"/>
@@ -296,6 +296,10 @@ body{background:var(--black);color:var(--text);font-family:'Segoe UI',Arial,sans
 
   <!-- ══════════ PÁGINA ADMIN ══════════ -->
   <div class="page" id="page-admin">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:11px;font-weight:700;color:var(--p3);letter-spacing:.15em;text-transform:uppercase">Panel Admin</div>
+      <button onclick="showPage('cliente',null)" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--muted);font-size:11px;padding:5px 10px;cursor:pointer">← Salir</button>
+    </div>
     <div class="stat-row" id="statsRow">
       <div class="stat-card"><div class="stat-label">Hoy</div><div class="stat-num" id="statHoy">—</div></div>
       <div class="stat-card"><div class="stat-label">Pendientes</div><div class="stat-num" id="statPend">—</div></div>
@@ -418,14 +422,6 @@ let serviciosData = [];
 let horariosAdminData = [];
 let todosLosTurnos = [];
 let pasoActual = 1;
-
-// ── INIT ─────────────────────────────────────────
-async function init() {
-  buildCalendario();
-  await cargarServicios();
-  // Setear fecha de hoy en filtro admin
-  document.getElementById('filtroFecha').value = hoy();
-}
 
 function hoy() { return new Date().toISOString().split('T')[0]; }
 
@@ -1161,11 +1157,25 @@ let tapCount = 0, tapTimer = null;
 function logoTap() {
   tapCount++;
   clearTimeout(tapTimer);
-  tapTimer = setTimeout(() => { tapCount = 0; }, 1500);
+  tapTimer = setTimeout(() => { tapCount = 0; }, 2000);
   if (tapCount >= 5) {
     tapCount = 0;
     mostrarPinModal();
   }
+}
+
+function iniciarLogoTap() {
+  const logo = document.getElementById('logoSvg');
+  if (!logo) return;
+  // Touch para mobile
+  logo.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    logoTap();
+  }, { passive: false });
+  // Click para desktop
+  logo.addEventListener('click', function(e) {
+    logoTap();
+  });
 }
 
 function mostrarPinModal() {
@@ -1208,7 +1218,12 @@ function verificarPin() {
 }
 
 // ── ARRANCAR ─────────────────────────────────────
-init();
+async function init() {
+  iniciarLogoTap();
+  buildCalendario();
+  await cargarServicios();
+  document.getElementById('filtroFecha').value = hoy();
+}
 </script>
 </body>
 </html>
