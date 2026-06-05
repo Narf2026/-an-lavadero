@@ -29,6 +29,7 @@ body{background:var(--black);color:var(--text);font-family:'Segoe UI',Arial,sans
 .tab-btn.active{background:var(--p1);color:#fff;border-color:var(--p1)}
 .notif-dot{position:absolute;top:-3px;right:-3px;width:8px;height:8px;background:#EF9F27;border-radius:50%;display:none}
 .notif-dot.show{display:block}
+#btnAdmin{display:none}
 
 /* PAGES */
 .page{display:none;padding:16px;gap:14px;flex-direction:column;flex:1}
@@ -146,10 +147,41 @@ body{background:var(--black);color:var(--text);font-family:'Segoe UI',Arial,sans
 .save-btn{width:100%;padding:11px;background:var(--p1);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-top:6px;letter-spacing:.1em;text-transform:uppercase}
 .save-btn:disabled{opacity:.5;cursor:not-allowed}
 
-/* HORARIOS ADMIN */
-.hor-admin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
-.hor-pill{padding:9px 4px;text-align:center;border-radius:7px;border:1px solid rgba(255,255,255,0.09);font-size:12px;cursor:pointer;color:var(--muted);background:var(--dark);font-weight:600;transition:all .15s}
-.hor-pill.on{background:var(--pfaint);color:var(--p3);border-color:var(--border)}
+/* HORARIOS ADMIN — AGENDA */
+.agenda-config{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
+.agenda-config-title{font-size:10px;font-weight:700;letter-spacing:.18em;color:var(--p3);text-transform:uppercase;margin-bottom:12px}
+.agenda-cfg-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.agenda-cfg-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;min-width:90px}
+.agenda-cfg-val{display:flex;gap:6px;flex:1}
+.dur-btn{padding:7px 14px;border-radius:6px;border:1px solid rgba(255,255,255,0.09);background:var(--dark);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+.dur-btn.on{background:var(--p1);color:#fff;border-color:var(--p1)}
+.time-inp{background:var(--dark);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;outline:none;width:90px}
+.time-inp:focus{border-color:var(--p1)}
+.dias-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.dia-pill{width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,0.09);background:var(--dark);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;text-transform:uppercase}
+.dia-pill.on{background:var(--p1);color:#fff;border-color:var(--p1)}
+
+.agenda-semana{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.agenda-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.agenda-nav-btn{background:none;border:none;color:var(--p3);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:5px}
+.agenda-nav-btn:hover{background:var(--pfaint)}
+.agenda-week-label{font-size:12px;font-weight:700;color:#fff;letter-spacing:.05em}
+.agenda-cols{display:flex;overflow-x:auto;scrollbar-width:none}
+.agenda-cols::-webkit-scrollbar{display:none}
+.agenda-col{flex:1;min-width:52px;border-right:1px solid rgba(255,255,255,0.05)}
+.agenda-col:last-child{border-right:none}
+.agenda-col-head{padding:8px 4px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);position:sticky;top:0;z-index:2}
+.agenda-col-dia{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.agenda-col-num{font-size:15px;font-weight:700;color:#fff;line-height:1.2}
+.agenda-col-head.hoy .agenda-col-num{color:var(--p3)}
+.agenda-col-head.cerrado{opacity:.35}
+.agenda-slots{padding:4px;display:flex;flex-direction:column;gap:3px;min-height:80px}
+.agenda-slot{padding:5px 3px;border-radius:5px;text-align:center;font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.agenda-slot.libre{background:var(--dark);color:var(--muted);border-color:rgba(255,255,255,0.06)}
+.agenda-slot.libre:hover{border-color:var(--p1);color:var(--p3)}
+.agenda-slot.ocupado{background:rgba(239,159,39,0.15);color:var(--w-c);border-color:rgba(239,159,39,0.25);cursor:default}
+.agenda-slot.bloqueado{background:rgba(226,75,74,0.12);color:rgba(240,149,149,0.5);border-color:transparent;cursor:pointer;text-decoration:line-through}
+.agenda-col-cerrado{padding:8px 4px;text-align:center;font-size:9px;color:rgba(255,255,255,0.15);font-style:italic}
 
 .loading{text-align:center;color:var(--muted);font-size:13px;padding:20px}
 .empty{text-align:center;color:var(--muted);font-size:13px;padding:24px;font-style:italic}
@@ -167,7 +199,7 @@ body{background:var(--black);color:var(--text);font-family:'Segoe UI',Arial,sans
   <!-- NAV -->
   <div class="nav">
     <div class="nav-logo">
-      <svg width="42" height="32" viewBox="0 0 92 72" fill="none">
+      <svg width="42" height="32" viewBox="0 0 92 72" fill="none" onclick="logoTap()" style="cursor:default">
         <defs><linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C060F0"/><stop offset="100%" stop-color="#5510A0"/></linearGradient></defs>
         <text x="4" y="56" font-family="Arial Black,Arial,sans-serif" font-size="58" font-weight="900" font-style="italic" fill="url(#lg1)" letter-spacing="-2">AN</text>
         <ellipse cx="48" cy="38" rx="44" ry="14" stroke="#A030E0" stroke-width="2.5" fill="none" transform="rotate(-8 48 38)"/>
@@ -298,12 +330,71 @@ body{background:var(--black);color:var(--text);font-family:'Segoe UI',Arial,sans
 
     <!-- TAB HORARIOS -->
     <div id="tab-horarios" style="display:none">
-      <div class="admin-card">
-        <div style="font-size:11px;color:var(--muted)">Tocá para habilitar / deshabilitar</div>
-        <div class="hor-admin-grid" id="horariosAdminGrid"><div class="loading">Cargando…</div></div>
-        <button class="save-btn" style="margin-top:10px" onclick="guardarHorarios()">Guardar horarios</button>
+
+      <!-- CONFIGURACIÓN -->
+      <div class="agenda-config">
+        <div class="agenda-config-title">⚙️ Configuración de agenda</div>
+
+        <div class="agenda-cfg-row">
+          <span class="agenda-cfg-label">Duración turno</span>
+          <div class="agenda-cfg-val">
+            <button class="dur-btn on" id="dur30" onclick="setDuracion(30)">30 min</button>
+            <button class="dur-btn" id="dur60" onclick="setDuracion(60)">1 hora</button>
+          </div>
+        </div>
+
+        <div class="agenda-cfg-row">
+          <span class="agenda-cfg-label">Horario</span>
+          <div class="agenda-cfg-val" style="align-items:center;gap:6px">
+            <input type="time" class="time-inp" id="horaInicio" value="08:00">
+            <span style="color:var(--muted);font-size:12px">a</span>
+            <input type="time" class="time-inp" id="horaFin" value="18:00">
+          </div>
+        </div>
+
+        <div class="agenda-cfg-row" style="align-items:flex-start">
+          <span class="agenda-cfg-label" style="margin-top:8px">Días activos</span>
+          <div class="dias-row">
+            <div class="dia-pill" data-d="1" onclick="toggleDia(this)">L</div>
+            <div class="dia-pill" data-d="2" onclick="toggleDia(this)">M</div>
+            <div class="dia-pill" data-d="3" onclick="toggleDia(this)">X</div>
+            <div class="dia-pill" data-d="4" onclick="toggleDia(this)">J</div>
+            <div class="dia-pill" data-d="5" onclick="toggleDia(this)">V</div>
+            <div class="dia-pill" data-d="6" onclick="toggleDia(this)">S</div>
+            <div class="dia-pill" data-d="0" onclick="toggleDia(this)">D</div>
+          </div>
+        </div>
+
+        <button class="save-btn" onclick="aplicarConfigAgenda()">Aplicar configuración</button>
         <div class="toast" id="toastHorarios"></div>
       </div>
+
+      <!-- LEYENDA -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;padding:0 2px">
+        <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)">
+          <span style="width:12px;height:12px;border-radius:3px;background:var(--dark);border:1px solid rgba(255,255,255,0.12);display:inline-block"></span>Libre
+        </span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)">
+          <span style="width:12px;height:12px;border-radius:3px;background:rgba(239,159,39,0.15);border:1px solid rgba(239,159,39,0.25);display:inline-block"></span>Ocupado
+        </span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)">
+          <span style="width:12px;height:12px;border-radius:3px;background:rgba(226,75,74,0.12);border:1px solid rgba(226,75,74,0.2);display:inline-block"></span>Bloqueado
+        </span>
+        <span style="font-size:10px;color:var(--muted);margin-left:auto;font-style:italic">Tocá libre/bloqueado para cambiar</span>
+      </div>
+
+      <!-- AGENDA SEMANAL -->
+      <div class="agenda-semana">
+        <div class="agenda-nav">
+          <button class="agenda-nav-btn" onclick="semanaOffset(-1)">‹</button>
+          <span class="agenda-week-label" id="agendaWeekLabel">—</span>
+          <button class="agenda-nav-btn" onclick="semanaOffset(+1)">›</button>
+        </div>
+        <div class="agenda-cols" id="agendaCols">
+          <div class="loading">Cargando agenda…</div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -390,17 +481,24 @@ function buildCalendario() {
   const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const base = new Date();
   const strip = document.getElementById('calStrip');
+  // Leer días activos de config guardada
+  let diasHabilitados = null;
+  try {
+    const cfg = JSON.parse(localStorage.getItem('agendaConfig') || '{}');
+    if (cfg.dias) diasHabilitados = new Set(cfg.dias);
+  } catch(e) {}
   strip.innerHTML = '';
   for (let i = 0; i < 14; i++) {
     const d = new Date(base);
     d.setDate(base.getDate() + i);
     const dow = d.getDay();
     const dateStr = d.toISOString().split('T')[0];
+    const cerrado = diasHabilitados ? !diasHabilitados.has(dow) : dow === 0;
     const el = document.createElement('div');
-    el.className = 'cal-day' + (dow === 0 ? ' disabled' : '');
+    el.className = 'cal-day' + (cerrado ? ' disabled' : '');
     const dLabel = d.toLocaleDateString('es-AR', { weekday:'short', day:'numeric', month:'short' });
     el.innerHTML = `<span class="cal-name">${dias[dow]}</span><span class="cal-num">${d.getDate()}</span>`;
-    if (dow !== 0) {
+    if (!cerrado) {
       el.onclick = () => {
         document.querySelectorAll('.cal-day').forEach(x => x.classList.remove('selected'));
         el.classList.add('selected');
@@ -419,6 +517,8 @@ async function cargarHorariosDisponibles(fecha) {
   grid.innerHTML = '<div class="loading">Verificando disponibilidad…</div>';
   wizard.horario = '';
 
+  const dow = new Date(fecha + 'T12:00:00').getDay(); // 0=Dom
+
   // Turnos ya reservados para esa fecha
   const { data: ocupados } = await db.from('turnos')
     .select('horario')
@@ -426,19 +526,28 @@ async function cargarHorariosDisponibles(fecha) {
     .neq('estado', 'rechazado');
   const ocupadosSet = new Set((ocupados || []).map(t => t.horario));
 
+  // Slots bloqueados manualmente por el admin
+  const { data: bloq } = await db.from('slots_bloqueados').select('hora').eq('fecha', fecha);
+  (bloq||[]).forEach(b => ocupadosSet.add(b.hora));
+
   // Horarios habilitados por el admin
   const { data: horas } = await db.from('horarios').select('*').eq('activo', true).order('orden');
   horariosActivos = horas || [];
+
+  // Filtrar por día de semana si el horario tiene dias_activos configurado
+  const horariosDelDia = horariosActivos.filter(h =>
+    !h.dias_activos || h.dias_activos.includes(dow)
+  );
 
   const hint = document.getElementById('horariosHint');
   hint.textContent = `Horarios disponibles para ${wizard.fechaLabel}`;
 
   grid.innerHTML = '';
-  if (!horariosActivos.length) {
-    grid.innerHTML = '<div class="empty" style="grid-column:span 3">Sin horarios habilitados</div>';
+  if (!horariosDelDia.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:span 3">Sin turnos disponibles para este día</div>';
     return;
   }
-  horariosActivos.forEach(h => {
+  horariosDelDia.forEach(h => {
     const esOcupado = ocupadosSet.has(h.hora);
     const el = document.createElement('div');
     el.className = 'horario-btn' + (esOcupado ? ' ocupado' : '');
@@ -720,29 +829,211 @@ async function guardarServicios() {
   await cargarServiciosAdmin();
 }
 
-// ── ADMIN: HORARIOS ──────────────────────────────
+// ── ADMIN: HORARIOS / AGENDA ─────────────────────
+let agendaDuracion = 30;
+let agendaDiasActivos = new Set([1,2,3,4,5,6]); // Lun–Sáb por defecto
+let agendaSemanaBase = 0; // offset semanas desde hoy
+let agendaTurnosCache = {}; // fecha -> [horarios ocupados]
+let agendaConfigDB = null; // config guardada en Supabase (tabla horarios_config)
+
+// — Helpers de tiempo —
+function timeToMin(t) { const [h,m] = t.split(':').map(Number); return h*60+m; }
+function minToTime(m) { return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+
+function generarSlots(inicio, fin, durMin) {
+  const slots = [];
+  for (let t = timeToMin(inicio); t + durMin <= timeToMin(fin); t += durMin)
+    slots.push(minToTime(t));
+  return slots;
+}
+
+function getLunesDeSemana(offsetSemanas) {
+  const hoyD = new Date();
+  const dow = hoyD.getDay(); // 0=Dom
+  const diffLunes = (dow === 0) ? -6 : 1 - dow;
+  const lunes = new Date(hoyD);
+  lunes.setDate(hoyD.getDate() + diffLunes + offsetSemanas * 7);
+  lunes.setHours(0,0,0,0);
+  return lunes;
+}
+
+// — UI config —
+function setDuracion(min) {
+  agendaDuracion = min;
+  document.getElementById('dur30').className = 'dur-btn' + (min===30?' on':'');
+  document.getElementById('dur60').className = 'dur-btn' + (min===60?' on':'');
+}
+
+function toggleDia(el) {
+  const d = parseInt(el.dataset.d);
+  if (agendaDiasActivos.has(d)) agendaDiasActivos.delete(d);
+  else agendaDiasActivos.add(d);
+  el.classList.toggle('on');
+}
+
+// — Cargar config guardada —
+async function cargarConfigAgenda() {
+  // Guardamos config en tabla horarios (campos especiales) o en localStorage como fallback
+  const saved = localStorage.getItem('agendaConfig');
+  if (saved) {
+    const cfg = JSON.parse(saved);
+    agendaDuracion = cfg.duracion || 30;
+    agendaDiasActivos = new Set(cfg.dias || [1,2,3,4,5,6]);
+    document.getElementById('horaInicio').value = cfg.inicio || '08:00';
+    document.getElementById('horaFin').value = cfg.fin || '18:00';
+    setDuracion(agendaDuracion);
+    document.querySelectorAll('.dia-pill').forEach(el => {
+      el.classList.toggle('on', agendaDiasActivos.has(parseInt(el.dataset.d)));
+    });
+  }
+}
+
+async function aplicarConfigAgenda() {
+  const inicio = document.getElementById('horaInicio').value;
+  const fin = document.getElementById('horaFin').value;
+  if (timeToMin(inicio) >= timeToMin(fin)) {
+    showToast('toastHorarios','El horario de inicio debe ser antes del fin','error'); return;
+  }
+  // Guardar config
+  const cfg = { duracion:agendaDuracion, dias:[...agendaDiasActivos], inicio, fin };
+  localStorage.setItem('agendaConfig', JSON.stringify(cfg));
+
+  // Regenerar horarios en Supabase: borrar todos y reinsertar
+  const slots = generarSlots(inicio, fin, agendaDuracion);
+  await db.from('horarios').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // borra todos
+  const inserts = slots.map((hora, i) => ({
+    hora,
+    activo: true,
+    orden: i,
+    dias_activos: [...agendaDiasActivos]
+  }));
+  if (inserts.length) await db.from('horarios').insert(inserts);
+
+  showToast('toastHorarios', `✓ Agenda configurada: ${slots.length} slots de ${agendaDuracion} min`, 'success');
+  await cargarHorariosAdminPreload();
+  await renderAgenda();
+}
+
+// — Agenda visual —
+let slotsBloqueados = new Set(); // "fecha|hora"
+
 async function cargarHorariosAdmin() {
-  const { data } = await db.from('horarios').select('*').order('orden');
-  horariosAdminData = data || [];
-  const grid = document.getElementById('horariosAdminGrid'); grid.innerHTML = '';
-  horariosAdminData.forEach(h => {
-    const el = document.createElement('div');
-    el.className = 'hor-pill' + (h.activo ? ' on' : '');
-    el.textContent = h.hora; el.dataset.id = h.id;
-    el.onclick = () => { h.activo = !h.activo; el.className = 'hor-pill' + (h.activo ? ' on' : ''); };
-    grid.appendChild(el);
+  await cargarConfigAgenda();
+  await renderAgenda();
+}
+
+async function renderAgenda() {
+  const lunes = getLunesDeSemana(agendaSemanaBase);
+  const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+  const fmtCorto = d => d.toLocaleDateString('es-AR', {day:'numeric',month:'short'});
+  document.getElementById('agendaWeekLabel').textContent =
+    `${fmtCorto(lunes)} – ${fmtCorto(domingo)}`;
+
+  const fechaIni = lunes.toISOString().split('T')[0];
+  const fechaFin = domingo.toISOString().split('T')[0];
+
+  // Cargar turnos de la semana
+  const { data: turnos } = await db.from('turnos').select('fecha,horario,nombre_cliente,estado')
+    .gte('fecha', fechaIni).lte('fecha', fechaFin).neq('estado','rechazado');
+
+  // Cargar slots bloqueados manualmente
+  const { data: bloqueados } = await db.from('slots_bloqueados')
+    .select('fecha,hora').gte('fecha', fechaIni).lte('fecha', fechaFin);
+  slotsBloqueados = new Set((bloqueados||[]).map(b => b.fecha+'|'+b.hora));
+
+  // Indexar turnos por fecha
+  const porFecha = {};
+  (turnos||[]).forEach(t => {
+    if (!porFecha[t.fecha]) porFecha[t.fecha] = {};
+    porFecha[t.fecha][t.horario] = t;
   });
+
+  const inicio = document.getElementById('horaInicio').value || '08:00';
+  const fin = document.getElementById('horaFin').value || '18:00';
+  const slots = generarSlots(inicio, fin, agendaDuracion);
+  const diasNombres = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const hoyStr = new Date().toISOString().split('T')[0];
+
+  const cols = document.getElementById('agendaCols');
+  cols.innerHTML = '';
+
+  for (let i = 0; i < 7; i++) {
+    const dia = new Date(lunes); dia.setDate(lunes.getDate() + i);
+    const dow = dia.getDay();
+    const dateStr = dia.toISOString().split('T')[0];
+    const activo = agendaDiasActivos.has(dow);
+
+    const col = document.createElement('div');
+    col.className = 'agenda-col';
+
+    const esHoy = dateStr === hoyStr;
+    col.innerHTML = `<div class="agenda-col-head${esHoy?' hoy':''}${!activo?' cerrado':''}">
+      <div class="agenda-col-dia">${diasNombres[dow]}</div>
+      <div class="agenda-col-num">${dia.getDate()}</div>
+    </div>`;
+
+    const slotsDiv = document.createElement('div');
+    slotsDiv.className = 'agenda-slots';
+
+    if (!activo) {
+      slotsDiv.innerHTML = '<div class="agenda-col-cerrado">Cerrado</div>';
+    } else if (!slots.length) {
+      slotsDiv.innerHTML = '<div class="agenda-col-cerrado">—</div>';
+    } else {
+      slots.forEach(hora => {
+        const turno = porFecha[dateStr]?.[hora];
+        const key = dateStr+'|'+hora;
+        const bloqueado = slotsBloqueados.has(key);
+        const el = document.createElement('div');
+        if (turno) {
+          el.className = 'agenda-slot ocupado';
+          el.title = turno.nombre_cliente + ' — ' + (turno.estado === 'confirmado' ? '✓ Confirmado' : 'Pendiente');
+          el.textContent = hora;
+        } else if (bloqueado) {
+          el.className = 'agenda-slot bloqueado';
+          el.title = 'Bloqueado — tocá para habilitar';
+          el.textContent = hora;
+          el.onclick = () => toggleSlotBloqueado(dateStr, hora, el);
+        } else {
+          el.className = 'agenda-slot libre';
+          el.title = 'Libre — tocá para bloquear';
+          el.textContent = hora;
+          el.onclick = () => toggleSlotBloqueado(dateStr, hora, el);
+        }
+        slotsDiv.appendChild(el);
+      });
+    }
+
+    col.appendChild(slotsDiv);
+    cols.appendChild(col);
+  }
+}
+
+async function toggleSlotBloqueado(fecha, hora, el) {
+  const key = fecha+'|'+hora;
+  if (slotsBloqueados.has(key)) {
+    // Desbloquear
+    await db.from('slots_bloqueados').delete().eq('fecha', fecha).eq('hora', hora);
+    slotsBloqueados.delete(key);
+    el.className = 'agenda-slot libre';
+    el.title = 'Libre — tocá para bloquear';
+  } else {
+    // Bloquear
+    await db.from('slots_bloqueados').insert({ fecha, hora });
+    slotsBloqueados.add(key);
+    el.className = 'agenda-slot bloqueado';
+    el.title = 'Bloqueado — tocá para habilitar';
+  }
+}
+
+function semanaOffset(delta) {
+  agendaSemanaBase += delta;
+  renderAgenda();
 }
 
 async function cargarHorariosAdminPreload() {
   const { data } = await db.from('horarios').select('*').eq('activo', true).order('orden');
   horariosActivos = data || [];
-}
-
-async function guardarHorarios() {
-  for (const h of horariosAdminData) await db.from('horarios').update({ activo:h.activo }).eq('id', h.id);
-  horariosActivos = horariosAdminData.filter(h => h.activo);
-  showToast('toastHorarios', 'Horarios actualizados.', 'success');
 }
 
 // ── NAVEGACIÓN ───────────────────────────────────
@@ -769,6 +1060,26 @@ function showToast(id, msg, type) {
   const t = document.getElementById(id);
   t.textContent = msg; t.className = 'toast '+type; t.style.display = 'block';
   setTimeout(() => t.style.display = 'none', 3500);
+}
+
+// ── ACCESO ADMIN OCULTO ──────────────────────────
+const ADMIN_PIN = '1234'; // ← cambiá esto
+let tapCount = 0, tapTimer = null;
+
+function logoTap() {
+  tapCount++;
+  clearTimeout(tapTimer);
+  tapTimer = setTimeout(() => { tapCount = 0; }, 1500);
+  if (tapCount >= 5) {
+    tapCount = 0;
+    const pin = prompt('🔒 PIN Admin:');
+    if (pin === ADMIN_PIN) {
+      document.getElementById('btnAdmin').style.display = 'block';
+      showPage('admin', document.getElementById('btnAdmin'));
+    } else if (pin !== null) {
+      alert('PIN incorrecto');
+    }
+  }
 }
 
 // ── ARRANCAR ─────────────────────────────────────
