@@ -988,7 +988,11 @@ async function aplicarConfigAgenda() {
 
   // Regenerar horarios en Supabase: borrar todos y reinsertar
   const slots = generarSlots(inicio, fin, agendaDuracion);
-  await db.from('horarios').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // borra todos
+  const { data: existentes } = await db.from('horarios').select('id');
+  if (existentes && existentes.length) {
+    const ids = existentes.map(h => h.id);
+    await db.from('horarios').delete().in('id', ids);
+  }
   const inserts = slots.map((hora, i) => ({
     hora,
     activo: true,
