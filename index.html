@@ -199,7 +199,7 @@ body{background:var(--black);color:var(--text);font-family:'Segoe UI',Arial,sans
   <!-- NAV -->
   <div class="nav">
     <div class="nav-logo">
-      <svg width="42" height="32" viewBox="0 0 92 72" fill="none" onclick="logoTap()" style="cursor:default">
+      <svg width="42" height="32" viewBox="0 0 92 72" fill="none" onclick="logoTap()" style="cursor:pointer;-webkit-tap-highlight-color:transparent">
         <defs><linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C060F0"/><stop offset="100%" stop-color="#5510A0"/></linearGradient></defs>
         <text x="4" y="56" font-family="Arial Black,Arial,sans-serif" font-size="58" font-weight="900" font-style="italic" fill="url(#lg1)" letter-spacing="-2">AN</text>
         <ellipse cx="48" cy="38" rx="44" ry="14" stroke="#A030E0" stroke-width="2.5" fill="none" transform="rotate(-8 48 38)"/>
@@ -613,9 +613,23 @@ async function solicitarTurno() {
 
 // ── SERVICIOS (cliente) ──────────────────────────
 async function cargarServicios() {
-  const { data } = await db.from('servicios').select('*').eq('activo', true).order('orden');
+  const { data, error } = await db.from('servicios').select('*').eq('activo', true).order('orden');
+  if (error) {
+    document.getElementById('preciosGrid').innerHTML =
+      `<div style="grid-column:span 2;text-align:center;color:var(--d-c);font-size:12px;padding:16px">
+        Error al cargar servicios.<br><small style="color:var(--muted)">${error.message}</small>
+       </div>`;
+    return;
+  }
   serviciosData = data || [];
-  renderPreciosCliente(serviciosData);
+  if (!serviciosData.length) {
+    document.getElementById('preciosGrid').innerHTML =
+      `<div style="grid-column:span 2;text-align:center;color:var(--muted);font-size:12px;padding:16px;font-style:italic">
+        Aún no hay servicios cargados
+       </div>`;
+  } else {
+    renderPreciosCliente(serviciosData);
+  }
   const sel = document.getElementById('inputServicio');
   sel.innerHTML = '<option value="">— Elegí un servicio —</option>' +
     serviciosData.map(s => `<option value="${s.id}">${s.nombre}</option>`).join('');
@@ -1150,15 +1164,46 @@ function logoTap() {
   tapTimer = setTimeout(() => { tapCount = 0; }, 1500);
   if (tapCount >= 5) {
     tapCount = 0;
-    const pin = prompt('🔒 PIN Admin:');
-    if (pin === ADMIN_PIN) {
-      const adminBtn = document.getElementById('btnAdmin');
-      adminBtn.style.display = 'block';
-      adminBtn.classList.add('active');
-      showPage('admin', adminBtn);
-    } else if (pin !== null) {
-      alert('PIN incorrecto');
-    }
+    mostrarPinModal();
+  }
+}
+
+function mostrarPinModal() {
+  let overlay = document.getElementById('pinModal');
+  if (overlay) { overlay.remove(); }
+  overlay = document.createElement('div');
+  overlay.id = 'pinModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.innerHTML = `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:100%;max-width:300px;text-align:center">
+      <div style="font-size:22px;margin-bottom:8px">🔒</div>
+      <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:16px;letter-spacing:.05em">Acceso Admin</div>
+      <input id="pinInput" type="password" class="aw-input" placeholder="PIN" maxlength="10"
+        style="text-align:center;font-size:20px;letter-spacing:.3em;margin-bottom:12px"
+        onkeydown="if(event.key==='Enter')verificarPin()">
+      <div style="display:flex;gap:8px">
+        <button class="submit-btn" style="background:var(--card2);color:var(--muted)" onclick="document.getElementById('pinModal').remove()">Cancelar</button>
+        <button class="submit-btn" onclick="verificarPin()">Entrar</button>
+      </div>
+      <div id="pinError" style="color:var(--d-c);font-size:12px;margin-top:10px;display:none">PIN incorrecto</div>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('pinInput')?.focus(), 100);
+}
+
+function verificarPin() {
+  const pin = document.getElementById('pinInput')?.value;
+  if (pin === ADMIN_PIN) {
+    document.getElementById('pinModal').remove();
+    const adminBtn = document.getElementById('btnAdmin');
+    adminBtn.style.display = 'block';
+    adminBtn.classList.add('active');
+    showPage('admin', adminBtn);
+  } else {
+    const err = document.getElementById('pinError');
+    err.style.display = 'block';
+    document.getElementById('pinInput').value = '';
+    setTimeout(() => { if(err) err.style.display = 'none'; }, 2000);
   }
 }
 
